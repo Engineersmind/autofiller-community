@@ -1,33 +1,83 @@
 # Autofiller Community Edition
 
-**Open-source document intelligence for structured data extraction**
+**AI-powered document understanding and intelligent form autofilling**
 
 [![CI](https://github.com/your-org/autofiller-community/workflows/CI/badge.svg)](https://github.com/your-org/autofiller-community/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-Autofiller Community Edition is an open-source document extraction platform that turns unstructured documents (PDFs, images, scans) into structured JSON using domain-specific extraction packs. Built for developers who need reliable, high-quality data extraction without vendor lock-in.
+Autofiller Community Edition is an open-source AI platform that understands document structure and automatically fills forms. Upload a PDF, and Autofiller's AI models extract relevant fields, ask smart persona-adapted questions for missing data, and autofill your forms—no manual data entry required.
 
 ## 🎯 What's Included
 
 This repository contains:
 
-- **OpenAPI Specification** – Complete API contract for document processing
+- **AI Models** – Training pipelines for document understanding and field extraction
+- **Personas** – Document filler profiles (HR, Loan Officer, Tax Preparer) with learned filling logic
+- **Domain Packs** – Document schemas, validation rules, and capture logic
+- **Capture Logic** – PDF-to-form field mapping and transformation rules
 - **SDKs** – Official TypeScript and Python client libraries
-- **Domain Packs** – Pluggable extraction schemas + evaluation datasets
-- **Eval Runner** – Local and CI-based quality measurement
-- **Examples** – Working code samples for common use cases
-- **Documentation** – Comprehensive guides and references
+- **Eval Runner** – Model accuracy and fill accuracy measurement
+- **OpenAPI Specification** – Complete API contract
+- **Examples & Documentation** – Code samples and guides
+
+### How It Works
+
+Personas are **types of users who fill PDFs** (like HR filling W-4s, or Loan Officers filling mortgage apps). The AI learns each persona's filling patterns and reuses that logic:
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                           PERSONA-BASED AI TRAINING                        │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  ┌─────────────────┐    Train AI    ┌─────────────────────────────────┐   │
+│  │ HR Professional │ ──────────────▶│ Trained Agent: W-4, I-9, etc.  │   │
+│  │ (Fills: W-4, I-9)│               │ Knows: withholding rules, SSN  │   │
+│  └─────────────────┘                │ validation, dependent calcs    │   │
+│                                     └─────────────────────────────────┘   │
+│                                                                            │
+│  ┌─────────────────┐    Train AI    ┌─────────────────────────────────┐   │
+│  │ Loan Officer    │ ──────────────▶│ Trained Agent: 1003, disclosures│  │
+│  │ (Fills: 1003)   │                │ Knows: DTI calc, income verify │   │
+│  └─────────────────┘                └─────────────────────────────────┘   │
+│                                                                            │
+│  ┌─────────────────┐    Train AI    ┌─────────────────────────────────┐   │
+│  │ Tax Preparer    │ ──────────────▶│ Trained Agent: 1040, schedules │   │
+│  │ (Fills: 1040)   │                │ Knows: tax rules, deductions   │   │
+│  └─────────────────┘                └─────────────────────────────────┘   │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+                              FILLING A NEW DOCUMENT
+                              
+┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│ PDF Upload  │────▶│ AI Document      │────▶│ Persona Agent    │
+│             │     │ Understanding    │     │ (Learned Logic)  │
+└─────────────┘     └──────────────────┘     └──────────────────┘
+                            │                         │
+                            ▼                         ▼
+                    ┌──────────────────┐     ┌──────────────────┐
+                    │ Field Extraction │     │ Smart Questions  │
+                    │ + Confidence     │     │ (If data missing)│
+                    └──────────────────┘     └──────────────────┘
+                            │                         │
+                            └────────────┬────────────┘
+                                         ▼
+                            ┌──────────────────────┐
+                            │ ✅ Autofilled Form   │
+                            └──────────────────────┘
+```
 
 ### What's NOT Included (Hosted Service)
 
-The following components remain proprietary and are provided as a hosted service:
+The following components are provided as a hosted service:
 
-- Core extraction pipeline (ML models, training infrastructure)
+- Pre-trained model weights
+- Large-scale training infrastructure (GPU clusters)
 - Production orchestration and scaling
 - Credit/token management system
 
-This **open-core** model ensures you can contribute to and benefit from shared extraction logic while we maintain the infrastructure.
+This **open-core** model ensures you can contribute to and benefit from shared AI logic while we maintain the infrastructure.
 
 ## 🚀 Quickstart
 
@@ -91,9 +141,11 @@ curl -X POST https://api.autofiller.dev/v1/extract \\
 Domain packs are the heart of Autofiller Community. Each pack defines:
 
 - **Schema** – What fields to extract (JSON Schema)
+- **Questions** – Persona-adapted questions for missing data
+- **Capture Rules** – PDF-to-form field mapping logic
 - **Routing** – Document type detection rules
 - **Eval Cases** – Test fixtures + expected outputs
-- **Metrics** – Quality thresholds for acceptance
+- **Metrics** – Accuracy thresholds for AI models
 
 **Available Packs:**
 

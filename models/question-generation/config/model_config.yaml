@@ -1,0 +1,106 @@
+# Question Generation Model Configuration
+# =======================================
+#
+# Generates smart questions based on user persona when
+# information is missing or ambiguous from the document.
+
+model:
+  name: autofiller-question-generation
+  version: 1.0.0
+  
+  # LLM backbone for question generation
+  backbone:
+    type: llm
+    # Options: gpt-4, claude, llama, mistral
+    provider: openai
+    model: gpt-4-turbo-preview
+    
+    # Or use local model
+    # type: local
+    # model_path: models/question-generation/outputs/finetuned
+    
+  # Question generation settings
+  generation:
+    max_questions: 5
+    max_question_length: 200
+    temperature: 0.7
+    top_p: 0.9
+    
+# Question types
+question_types:
+  - type: missing_field
+    description: Ask for completely missing information
+    priority: high
+    
+  - type: ambiguous_value
+    description: Clarify when multiple values possible
+    priority: high
+    
+  - type: low_confidence
+    description: Verify fields with low extraction confidence
+    priority: medium
+    
+  - type: validation
+    description: Confirm critical fields before submission
+    priority: low
+    
+  - type: additional_context
+    description: Gather context not in document
+    priority: low
+
+# Persona adaptation
+persona:
+  # Load persona definitions
+  schema_path: personas/persona.schema.json
+  
+  # Adaptation settings
+  adapt_vocabulary: true
+  adapt_formality: true
+  adapt_technical_level: true
+  adapt_language: true
+  
+  # Examples per persona type
+  few_shot_examples: 3
+
+# Prompt templates
+prompts:
+  system: |
+    You are a helpful assistant that generates clear, concise questions
+    to gather missing information for form filling. Adapt your language
+    to match the user's persona.
+    
+  missing_field: |
+    The following field is missing from the document: {field_name}
+    Field description: {field_description}
+    User persona: {persona}
+    Document context: {context}
+    
+    Generate a natural question to ask the user for this information.
+    
+  ambiguous_value: |
+    The field "{field_name}" has multiple possible values:
+    {possible_values}
+    User persona: {persona}
+    Document context: {context}
+    
+    Generate a question to help the user choose the correct value.
+    
+  low_confidence: |
+    We extracted "{extracted_value}" for field "{field_name}" 
+    but with low confidence ({confidence}%).
+    User persona: {persona}
+    
+    Generate a question to verify this value with the user.
+
+# Output configuration
+output:
+  include_question_type: true
+  include_related_field: true
+  include_context: true
+  include_suggested_answers: true
+
+# Inference settings
+inference:
+  timeout_seconds: 10
+  retry_attempts: 3
+  fallback_to_template: true

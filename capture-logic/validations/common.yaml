@@ -1,0 +1,103 @@
+# Common Validation Rules
+# =======================
+# Reusable validation patterns for form fields
+
+validations:
+  # Required field
+  - name: required
+    type: required
+    error: "This field is required"
+    
+  # Positive number
+  - name: positive
+    type: range
+    min: 0.01
+    error: "Value must be greater than zero"
+    
+  # Non-negative number  
+  - name: non_negative
+    type: range
+    min: 0
+    error: "Value cannot be negative"
+    
+  # Percentage (0-100)
+  - name: percentage
+    type: range
+    min: 0
+    max: 100
+    error: "Percentage must be between 0 and 100"
+    
+  # US Social Security Number
+  - name: ssn
+    type: pattern
+    pattern: "^\\d{3}-\\d{2}-\\d{4}$"
+    error: "SSN must be in format XXX-XX-XXXX"
+    
+  # US Employer Identification Number
+  - name: ein
+    type: pattern
+    pattern: "^\\d{2}-\\d{7}$"
+    error: "EIN must be in format XX-XXXXXXX"
+    
+  # US Phone Number
+  - name: phone_us
+    type: pattern
+    pattern: "^(\\+1)?[\\s.-]?\\(?\\d{3}\\)?[\\s.-]?\\d{3}[\\s.-]?\\d{4}$"
+    error: "Invalid US phone number"
+    
+  # Email address
+  - name: email
+    type: pattern
+    pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+    error: "Invalid email address"
+    
+  # US ZIP code (5 or 9 digit)
+  - name: zip_us
+    type: pattern
+    pattern: "^\\d{5}(-\\d{4})?$"
+    error: "ZIP code must be 5 or 9 digits"
+    
+  # US State code
+  - name: state_us
+    type: enum
+    values: [
+      "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+      "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+      "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+      "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+      "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+      "DC", "PR", "VI", "GU", "AS", "MP"
+    ]
+    error: "Invalid US state code"
+    
+  # Date not in future
+  - name: date_not_future
+    type: custom
+    function: "date <= today"
+    error: "Date cannot be in the future"
+    
+  # Date within tax year
+  - name: date_in_tax_year
+    type: custom
+    function: "date.year == tax_year"
+    error: "Date must be within the tax year"
+    
+  # Name (letters, spaces, hyphens, apostrophes)
+  - name: name
+    type: pattern
+    pattern: "^[a-zA-Z][a-zA-Z\\s'-]{1,100}$"
+    error: "Name contains invalid characters"
+    
+  # Routing number (ABA)
+  - name: routing_number
+    type: pattern
+    pattern: "^\\d{9}$"
+    error: "Routing number must be 9 digits"
+    
+  # Bank account number
+  - name: account_number
+    type: length
+    min_length: 4
+    max_length: 17
+    pattern: "^\\d+$"
+    error: "Invalid account number"

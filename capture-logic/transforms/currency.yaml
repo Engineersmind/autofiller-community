@@ -1,0 +1,66 @@
+# Currency Transformation Rules
+# =============================
+# Currency and monetary value transformations
+
+transforms:
+  # Standard currency (remove symbols, format decimals)
+  - name: format_currency
+    type: currency
+    remove_symbols: ["$", "€", "£", "¥", ",", " "]
+    decimal_places: 2
+    decimal_separator: "."
+    output_type: number
+    
+  # Currency with symbol
+  - name: format_currency_display
+    type: currency
+    remove_symbols: ["$", ","]
+    decimal_places: 2
+    output_format: "${value}"
+    output_type: string
+    
+  # Whole dollars only
+  - name: format_whole_dollars
+    type: currency
+    remove_symbols: ["$", ",", "."]
+    decimal_places: 0
+    round: true
+    output_type: integer
+    
+  # Cents only
+  - name: format_cents
+    type: currency
+    remove_symbols: ["$", ","]
+    transform: "value * 100"
+    decimal_places: 0
+    output_type: integer
+    description: "Convert dollars to cents"
+    
+  # Thousands
+  - name: format_thousands
+    type: currency
+    remove_symbols: ["$", ","]
+    transform: "value / 1000"
+    decimal_places: 1
+    output_type: number
+    description: "Convert to thousands"
+    
+  # Accounting format (negative in parentheses)
+  - name: format_accounting
+    type: currency
+    remove_symbols: ["$", ",", "(", ")"]
+    handle_negative:
+      pattern: "\\((.+)\\)"
+      transform: "-$1"
+    decimal_places: 2
+    output_type: number
+
+  # Parse written amounts
+  - name: parse_written_amount
+    type: currency
+    patterns:
+      - regex: "(\\d+) dollars? and (\\d+) cents?"
+        transform: "$1.$2"
+      - regex: "(\\d+) dollars?"
+        transform: "$1.00"
+    output_type: number

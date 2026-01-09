@@ -1,0 +1,99 @@
+# Field Extraction Model Configuration
+# ====================================
+#
+# Model for extracting specific field values from documents
+# after layout understanding is complete.
+
+model:
+  name: autofiller-field-extraction
+  version: 1.0.0
+  
+  # Uses document understanding as foundation
+  foundation:
+    model: autofiller-doc-understanding
+    checkpoint: models/document-understanding/outputs/best.pt
+    freeze: true  # Freeze foundation layers during training
+    
+  # Extraction head
+  extraction_head:
+    type: span_extraction
+    hidden_size: 768
+    num_layers: 3
+    dropout: 0.1
+    
+    # Multi-task heads
+    heads:
+      - name: field_classifier
+        type: sequence_labeling
+        num_labels: 64  # Field types per domain pack
+        
+      - name: value_extractor
+        type: span_prediction
+        max_span_length: 128
+        
+      - name: confidence_scorer
+        type: regression
+        output_dim: 1
+
+# Field types (global + domain-specific)
+field_types:
+  # Global fields (shared across packs)
+  global:
+    - document_type
+    - document_date
+    - document_id
+    - total_amount
+    - currency
+    - vendor_name
+    - vendor_address
+    - customer_name
+    - customer_address
+    
+  # Domain-specific loaded from packs
+  domain_specific: true
+  pack_schema_path: domain-packs/{pack}/schema.json
+
+# Input configuration
+input:
+  # From document understanding
+  use_layout_features: true
+  use_segment_features: true
+  use_entity_features: true
+  
+  # Additional context
+  context_window: 128
+  include_surrounding_text: true
+
+# Output configuration  
+output:
+  # Per-field output
+  field_output:
+    include_value: true
+    include_confidence: true
+    include_bbox: true
+    include_source_text: true
+    
+  # Confidence thresholds
+  confidence:
+    high_threshold: 0.9
+    medium_threshold: 0.7
+    low_threshold: 0.5
+
+# Inference settings
+inference:
+  batch_size: 4
+  device: cuda
+  precision: fp16
+  
+  # Extraction strategy
+  strategy:
+    type: beam_search
+    beam_width: 3
+    length_penalty: 1.0
+    
+  # Post-processing
+  postprocess:
+    validate_against_schema: true
+    apply_constraints: true
+    normalize_dates: true
+    normalize_amounts: true

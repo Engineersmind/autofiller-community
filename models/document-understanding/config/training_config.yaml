@@ -1,0 +1,123 @@
+# Document Understanding Training Configuration
+# =============================================
+
+# Training settings
+training:
+  # Basic hyperparameters
+  epochs: 50
+  batch_size: 8
+  gradient_accumulation_steps: 4
+  
+  # Optimizer
+  optimizer:
+    type: adamw
+    lr: 5e-5
+    weight_decay: 0.01
+    betas: [0.9, 0.999]
+    
+  # Learning rate schedule
+  scheduler:
+    type: cosine
+    warmup_ratio: 0.1
+    min_lr_ratio: 0.01
+    
+  # Mixed precision
+  mixed_precision: fp16
+  
+  # Gradient clipping
+  max_grad_norm: 1.0
+
+# Data settings
+data:
+  train_dir: data/training/documents
+  val_dir: data/validation/documents
+  test_dir: data/test/documents
+  
+  # Data loading
+  num_workers: 4
+  prefetch_factor: 2
+  pin_memory: true
+  
+  # Augmentations
+  augmentations:
+    enabled: true
+    
+    # Geometric
+    random_rotate:
+      enabled: true
+      max_angle: 5
+      
+    random_scale:
+      enabled: true
+      scale_range: [0.9, 1.1]
+      
+    random_crop:
+      enabled: false
+      
+    # Color/quality
+    random_brightness:
+      enabled: true
+      factor: 0.1
+      
+    random_contrast:
+      enabled: true
+      factor: 0.1
+      
+    gaussian_noise:
+      enabled: true
+      std: 0.02
+      
+    # Document-specific
+    random_deskew:
+      enabled: true
+      max_angle: 2
+      
+    simulate_scan:
+      enabled: true
+      probability: 0.3
+
+# Evaluation settings
+evaluation:
+  eval_steps: 500
+  save_steps: 1000
+  
+  # Metrics
+  metrics:
+    - layout_iou
+    - segment_accuracy
+    - entity_f1
+    
+  # Early stopping
+  early_stopping:
+    enabled: true
+    patience: 5
+    metric: entity_f1
+    mode: max
+
+# Checkpointing
+checkpointing:
+  save_dir: outputs/document-understanding
+  save_best: true
+  save_last: true
+  max_checkpoints: 3
+
+# Logging
+logging:
+  log_steps: 100
+  
+  # Weights & Biases
+  wandb:
+    enabled: true
+    project: autofiller-doc-understanding
+    entity: autofiller
+    
+  # TensorBoard
+  tensorboard:
+    enabled: true
+    log_dir: logs/document-understanding
+
+# Hardware
+hardware:
+  device: cuda
+  num_gpus: 1
+  distributed: false
