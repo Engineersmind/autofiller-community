@@ -1,0 +1,299 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Autofiller Community Edition API",
+    "description": "Document extraction API for converting unstructured documents into structured JSON.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Autofiller Community",
+      "url": "https://github.com/your-org/autofiller-community"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.autofiller.dev/v1",
+      "description": "Production API"
+    },
+    {
+      "url": "https://sandbox.autofiller.dev/v1",
+      "description": "Sandbox (for testing)"
+    },
+    {
+      "url": "http://localhost:8080/v1",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    { "name": "extraction", "description": "Document extraction operations" },
+    { "name": "documents", "description": "Document management" },
+    { "name": "domain-packs", "description": "Domain pack information" },
+    { "name": "health", "description": "API health and status" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Health check",
+        "operationId": "getHealth",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API is healthy",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/extract": {
+      "post": {
+        "tags": ["extraction"],
+        "summary": "Extract data from document",
+        "operationId": "extractSync",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "domain_pack": {
+                    "type": "string"
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "include_confidence": { "type": "boolean", "default": true },
+                      "include_bounding_boxes": { "type": "boolean", "default": false },
+                      "language": { "type": "string", "default": "en" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Extraction successful",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ExtractionResult" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/extract/async": {
+      "post": {
+        "tags": ["extraction"],
+        "summary": "Start async extraction",
+        "operationId": "extractAsync",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": { "type": "string", "format": "binary" },
+                  "domain_pack": { "type": "string" },
+                  "webhook_url": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Job accepted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/JobCreated" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/{job_id}": {
+      "get": {
+        "tags": ["extraction"],
+        "summary": "Get job status",
+        "operationId": "getJob",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/JobStatus" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/domain-packs": {
+      "get": {
+        "tags": ["domain-packs"],
+        "summary": "List available domain packs",
+        "operationId": "listDomainPacks",
+        "responses": {
+          "200": {
+            "description": "List of domain packs",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DomainPackList" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "API Key"
+      }
+    },
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "required": ["status", "version"],
+        "properties": {
+          "status": { "type": "string", "enum": ["healthy", "degraded", "unhealthy"] },
+          "version": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ExtractionResult": {
+        "type": "object",
+        "required": ["id", "status", "domain_pack", "data"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["completed", "partial"] },
+          "domain_pack": { "type": "string" },
+          "data": { "type": "object", "additionalProperties": true },
+          "confidence": {
+            "type": "object",
+            "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+          },
+          "metadata": { "$ref": "#/components/schemas/ExtractionMetadata" }
+        }
+      },
+      "ExtractionMetadata": {
+        "type": "object",
+        "properties": {
+          "pages": { "type": "integer" },
+          "processing_time_ms": { "type": "integer" },
+          "model_version": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "JobCreated": {
+        "type": "object",
+        "required": ["job_id", "status"],
+        "properties": {
+          "job_id": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["pending"] },
+          "estimated_time_seconds": { "type": "integer" }
+        }
+      },
+      "JobStatus": {
+        "type": "object",
+        "required": ["job_id", "status"],
+        "properties": {
+          "job_id": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["pending", "processing", "completed", "failed"] },
+          "progress": { "type": "number", "minimum": 0, "maximum": 100 },
+          "result": { "$ref": "#/components/schemas/ExtractionResult" },
+          "error": { "$ref": "#/components/schemas/Error" }
+        }
+      },
+      "DomainPack": {
+        "type": "object",
+        "required": ["name", "version", "description", "schema"],
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "description": { "type": "string" },
+          "schema": { "type": "object" }
+        }
+      },
+      "DomainPackList": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/DomainPack" }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "details": { "type": "object" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Authentication required",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Rate limit exceeded",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    }
+  },
+  "security": [{ "bearerAuth": [] }]
+}

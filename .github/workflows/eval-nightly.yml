@@ -1,0 +1,80 @@
+name: Eval Nightly
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      pack:
+        description: 'Specific pack to evaluate (leave empty for all)'
+        required: false
+        type: string
+      live:
+        description: 'Use live API (requires API key)'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  full-eval:
+    name: Full Evaluation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r evals/runner/requirements.txt
+          pip install autofiller-sdk
+
+      - name: Validate all packs
+        run: |
+          python -m evals.runner.validate_packs
+
+      - name: Run full eval
+        env:
+          AUTOFILLER_API_KEY: ${{ secrets.AUTOFILLER_API_KEY }}
+        run: |
+          ARGS="--output eval-results.json"
+          
+          if [ -n "${{ github.event.inputs.pack }}" ]; then
+            ARGS="$ARGS --pack ${{ github.event.inputs.pack }}"
+          fi
+          
+          if [ "${{ github.event.inputs.live }}" = "false" ]; then
+            ARGS="$ARGS --no-live"
+          fi
+          
+          python -m evals.runner.full_eval $ARGS
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: full-eval-results-${{ github.run_number }}
+          path: |
+            eval-results.json
+          retention-days: 30
+
+      - name: Update leaderboard
+        if: success() && github.ref == 'refs/heads/main'
+        run: |
+          # Copy results to docs for leaderboard
+          mkdir -p docs/evals
+          cp eval-results.json docs/evals/latest.json
+          
+          # Could commit and push here if desired
+          echo "Leaderboard updated with latest results"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::warning::Full eval failed. Check results for details."

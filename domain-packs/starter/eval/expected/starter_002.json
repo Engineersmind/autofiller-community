@@ -1,0 +1,30 @@
+{
+  "document_id": "DOC-2024-002",
+  "document_date": "2024-02-20",
+  "title": "Sample Document with Line Items",
+  "description": "Document demonstrating line item extraction",
+  "amount": 2500.00,
+  "currency": "USD",
+  "sender": {
+    "name": "Beta Services Inc",
+    "address": "789 Service Blvd, Chicago, IL 60601"
+  },
+  "recipient": {
+    "name": "Jane Doe",
+    "address": "321 Client Lane, Miami, FL 33101"
+  },
+  "line_items": [
+    {
+      "description": "Professional Services",
+      "quantity": 10,
+      "unit_price": 150.00,
+      "amount": 1500.00
+    },
+    {
+      "description": "Software License",
+      "quantity": 2,
+      "unit_price": 500.00,
+      "amount": 1000.00
+    }
+  ]
+}
