@@ -205,7 +205,6 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 Inspired by the community-first approach of:
 - [Airbyte](https://github.com/airbytehq/airbyte) – Modular connector architecture
 - [Supabase](https://github.com/supabase/supabase) – Open-core done right
-- [Scale AI's LLM Engine](https://github.com/scaleapi/llm-engine) – Quality bar + examples
 
 ---
 
