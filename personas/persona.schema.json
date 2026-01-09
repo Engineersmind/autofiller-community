@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://autofiller.dev/schemas/persona.schema.json",
+  "title": "Autofiller Persona Schema",
+  "description": "Schema for defining document filler personas - user types that fill specific PDF documents",
+  "type": "object",
+  "required": ["id", "name", "role", "document_expertise"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Unique identifier for the persona"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Human-readable name for the persona"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Description of who this persona represents"
+    },
+    "extends": {
+      "type": "string",
+      "description": "ID of parent persona to inherit from"
+    },
+    "role": {
+      "type": "object",
+      "required": ["title", "responsibilities"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Job title or role name"
+        },
+        "department": {
+          "type": "string",
+          "description": "Department or functional area"
+        },
+        "industry": {
+          "type": "string",
+          "description": "Industry vertical (if specialized)"
+        },
+        "responsibilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Key responsibilities related to document filling"
+        }
+      }
+    },
+    "document_expertise": {
+      "type": "object",
+      "properties": {
+        "primary": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Primary documents this persona fills regularly"
+        },
+        "secondary": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Secondary documents this persona can fill"
+        }
+      },
+      "required": ["primary"]
+    },
+    "data_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["system", "document", "user_input", "api", "database"],
+            "description": "Type of data source"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the data source"
+          },
+          "fields": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Fields available from this source"
+          }
+        },
+        "required": ["type", "name"]
+      },
+      "description": "Data sources this persona uses to fill forms"
+    },
+    "knowledge": {
+      "type": "object",
+      "properties": {
+        "regulations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Regulatory knowledge required"
+        },
+        "calculations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Calculations this persona performs"
+        },
+        "validations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Validation rules this persona applies"
+        }
+      },
+      "description": "Domain knowledge this persona possesses"
+    },
+    "training_config": {
+      "type": "object",
+      "properties": {
+        "min_examples": {
+          "type": "integer",
+          "default": 100,
+          "description": "Minimum training examples required"
+        },
+        "accuracy_target": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.95,
+          "description": "Target accuracy for this persona"
+        },
+        "requires_human_review": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Fields that always require human review"
+        }
+      }
+    }
+  }
+}

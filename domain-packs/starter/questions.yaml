@@ -1,0 +1,109 @@
+# Questions for Starter Pack
+# ==========================
+# Persona-adapted questions for missing or ambiguous data
+
+# Default question set (used when no persona specified)
+default:
+  missing:
+    document_date:
+      question: "What is the date of this document?"
+      hint: "Look for a date at the top of the document"
+      
+    document_id:
+      question: "What is the document ID or reference number?"
+      hint: "This is usually in the header or top-right corner"
+      
+    vendor_name:
+      question: "Who is the vendor or sender of this document?"
+      hint: "Usually the company logo or letterhead"
+      
+    amount:
+      question: "What is the total amount on this document?"
+      hint: "Look for 'Total', 'Amount Due', or similar"
+      
+  ambiguous:
+    document_date:
+      question: "We found multiple dates: {options}. Which is the document date?"
+      
+    amount:
+      question: "We found these amounts: {options}. Which is the total amount?"
+      
+  low_confidence:
+    _default:
+      question: "We think the {field_name} is '{extracted_value}'. Is that correct?"
+
+# Individual persona
+individual:
+  missing:
+    document_date:
+      question: "What's the date on this document?"
+      hint: "It's usually near the top"
+      
+    document_id:
+      question: "Can you find a reference number on this document?"
+      hint: "It might say 'Ref #', 'ID', or 'Number'"
+      
+    vendor_name:
+      question: "Who sent you this document?"
+      
+    amount:
+      question: "What's the total amount you need to pay?"
+      
+  ambiguous:
+    document_date:
+      question: "I found a few dates on this document: {options}. Which one is the main document date?"
+      
+  low_confidence:
+    _default:
+      question: "I think the {field_name} is '{extracted_value}', but I'm not 100% sure. Does that look right?"
+
+# Accountant persona
+accountant:
+  missing:
+    document_date:
+      question: "Document date?"
+      
+    document_id:
+      question: "Reference/ID number?"
+      
+    vendor_name:
+      question: "Vendor/payee name?"
+      
+    amount:
+      question: "Total amount?"
+      
+  ambiguous:
+    document_date:
+      question: "Multiple dates detected: {options}. Select document date."
+      
+    amount:
+      question: "Multiple amounts detected: {options}. Select total."
+      
+  low_confidence:
+    _default:
+      question: "Verify {field_name}: '{extracted_value}' (confidence: {confidence}%)"
+
+# Question flow configuration
+flow:
+  # Order to ask questions
+  priority:
+    - document_date
+    - vendor_name
+    - document_id
+    - amount
+    
+  # Group related questions
+  groups:
+    - name: document_info
+      fields: [document_date, document_id]
+      ask_together: true
+      
+    - name: vendor_info
+      fields: [vendor_name, vendor_address]
+      ask_together: true
+      
+  # Skip rules
+  skip_if:
+    - field: vendor_address
+      when: "vendor_name is null"
+      reason: "No point asking for address without name"

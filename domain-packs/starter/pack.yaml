@@ -13,6 +13,12 @@ owners:
 # Path to JSON Schema defining extracted fields
 schema: schema.json
 
+# Persona-based questions for missing/ambiguous data
+questions: questions.yaml
+
+# Capture logic for PDF-to-form mapping
+capture_rules: capture-rules.yaml
+
 # Document routing configuration
 routing:
   # Keywords that indicate this document type
@@ -24,6 +30,11 @@ routing:
   anchors:
     - "Example Field"
     - "Demo Value"
+
+# Recommended personas for this pack
+recommended_personas:
+  - individual
+  - small-business
 
 # Evaluation configuration
 eval:
@@ -38,6 +49,19 @@ eval:
   
   # Directory containing test fixture documents
   fixtures_dir: fixtures
+
+# AI model configuration
+model_config:
+  # Minimum confidence threshold for auto-fill
+  min_confidence: 0.8
+  
+  # Fields that require user confirmation regardless of confidence
+  always_confirm:
+    - social_security_number
+    - bank_account_number
+  
+  # Fields that can be auto-filled without confirmation
+  auto_fill_threshold: 0.95
 
 # Pack constraints
 constraints:

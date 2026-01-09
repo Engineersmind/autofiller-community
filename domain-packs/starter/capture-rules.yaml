@@ -1,0 +1,100 @@
+# Capture Rules for Starter Pack
+# ==============================
+# Maps extracted data to common form fields
+
+id: starter-capture
+name: Starter Pack Capture Rules
+description: Example capture rules for the starter domain pack
+version: 0.1.0
+
+source_pack: starter
+target_forms:
+  - generic-form
+
+# Field mappings
+mappings:
+  - source: document_date
+    target: form.date
+    transform: format_date_iso
+    required: false
+    
+  - source: document_id
+    target: form.reference_number
+    required: false
+    
+  - source: vendor_name
+    target: form.source_name
+    required: false
+    
+  - source: vendor_address
+    target: form.source_address
+    transform: format_address
+    required: false
+    
+  - source: amount
+    target: form.amount
+    transform: format_currency
+    validation: non_negative
+    required: false
+    
+  - source: currency
+    target: form.currency
+    validation: 
+      type: enum
+      values: ["USD", "EUR", "GBP", "CAD", "AUD"]
+    fallback:
+      value: "USD"
+
+# Transform rules specific to this pack
+transforms:
+  - name: format_address
+    type: address
+    output_format: single_line
+    components:
+      - street
+      - city
+      - state
+      - zip
+
+# Validation rules
+validations:
+  - field: form.amount
+    rules:
+      - type: non_negative
+      - type: max
+        value: 10000000
+        error: "Amount exceeds maximum supported value"
+        
+  - field: form.date
+    rules:
+      - type: date_not_future
+        error: "Document date cannot be in the future"
+
+# Default values
+defaults:
+  - field: form.currency
+    value: "USD"
+    when:
+      condition: "currency is null or currency is empty"
+      
+  - field: form.status
+    value: "pending_review"
+
+# Computed fields
+computed:
+  - field: form.display_amount
+    formula: "concat(currency, ' ', format_currency(amount))"
+    dependencies:
+      - amount
+      - currency
+
+# Conditional logic
+conditionals:
+  - condition: "amount > 10000"
+    then:
+      set:
+        form.requires_approval: true
+        form.approval_level: "manager"
+    else:
+      set:
+        form.requires_approval: false

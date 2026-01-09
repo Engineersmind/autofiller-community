@@ -1,0 +1,247 @@
+# W-4 Filling Logic for HR Professional
+# ======================================
+# This defines how an HR Professional fills out Form W-4
+
+id: w4-filling-logic
+document: irs-w4
+document_version: "2024"
+persona: hr-professional
+
+# ==============================================
+# FIELD MAPPINGS
+# Map data sources to form fields
+# ==============================================
+field_mappings:
+  
+  # Step 1(a) - Name
+  - target: step1a_first_name
+    source: hris.legal_first_name
+    transform: uppercase
+    validation: 
+      - not_empty
+      - alpha_only
+      
+  - target: step1a_last_name
+    source: hris.legal_last_name
+    transform: uppercase
+    validation:
+      - not_empty
+      - alpha_only
+      
+  # Step 1(b) - Social Security Number
+  - target: step1b_ssn
+    source: hris.ssn
+    transform: format_ssn  # XXX-XX-XXXX
+    validation:
+      - pattern: "^\\d{3}-\\d{2}-\\d{4}$"
+      - valid_ssn_checksum
+    sensitive: true
+    requires_review: true
+    
+  # Step 1(c) - Address
+  - target: step1c_address
+    source: hris.address
+    transform: format_address_line1
+    
+  - target: step1c_city_state_zip
+    source: hris.address
+    transform: format_city_state_zip
+    
+  # Step 1(c) - Filing Status
+  - target: step1c_filing_status
+    source: employee_input.filing_status
+    type: checkbox_group
+    options:
+      single: "Single or Married filing separately"
+      married_jointly: "Married filing jointly"
+      head_of_household: "Head of household"
+
+# ==============================================
+# DECISION LOGIC
+# Complex fields requiring conditional logic
+# ==============================================
+decision_logic:
+
+  # Step 2 - Multiple Jobs or Spouse Works
+  - field: step2_multiple_jobs
+    type: checkbox
+    logic: |
+      # Check this box if:
+      # 1. Employee has more than one job, OR
+      # 2. Employee is married filing jointly AND spouse also works
+      
+      IF employee_input.has_multiple_jobs == true
+        RETURN checked
+        
+      IF employee_input.filing_status == "married_jointly"
+         AND employee_input.spouse_works == true
+        RETURN checked
+        
+      RETURN unchecked
+      
+    requires_input:
+      - field: has_multiple_jobs
+        question: "Do you have more than one job at the same time?"
+        type: boolean
+        
+      - field: spouse_works
+        question: "Does your spouse work?"
+        type: boolean
+        condition: "filing_status == 'married_jointly'"
+
+  # Step 3 - Claim Dependents
+  - field: step3_dependents
+    type: currency
+    logic: |
+      # Calculate dependent credits
+      # $2,000 for each qualifying child under 17
+      # $500 for each other dependent
+      
+      children_under_17 = employee_input.dependents_under_17 OR 0
+      other_dependents = employee_input.other_dependents OR 0
+      
+      child_credit = children_under_17 * 2000
+      other_credit = other_dependents * 500
+      
+      RETURN child_credit + other_credit
+      
+    requires_input:
+      - field: dependents_under_17
+        question: "How many qualifying children under age 17 do you have?"
+        type: integer
+        min: 0
+        max: 20
+        help: "Include children you will claim as dependents on your tax return"
+        
+      - field: other_dependents
+        question: "How many other dependents do you have?"
+        type: integer
+        min: 0
+        max: 20
+        help: "Include other dependents like elderly parents or children 17+"
+        
+    condition: |
+      # Only ask if income is below threshold
+      # Single: $200,000  |  Married: $400,000
+      IF filing_status == "married_jointly"
+        threshold = 400000
+      ELSE
+        threshold = 200000
+        
+      RETURN estimated_income <= threshold
+
+  # Step 4(a) - Other Income
+  - field: step4a_other_income
+    type: currency
+    optional: true
+    logic: |
+      RETURN employee_input.other_income OR null
+      
+    requires_input:
+      - field: other_income
+        question: "Do you expect income from other sources not subject to withholding?"
+        type: currency
+        optional: true
+        help: "Examples: interest, dividends, retirement income"
+
+  # Step 4(b) - Deductions
+  - field: step4b_deductions
+    type: currency
+    optional: true
+    logic: |
+      # If employee expects to itemize, calculate excess over standard deduction
+      IF employee_input.will_itemize == false
+        RETURN null
+        
+      standard_deduction = GET_STANDARD_DEDUCTION(filing_status, tax_year)
+      expected_itemized = employee_input.expected_itemized_deductions
+      
+      IF expected_itemized > standard_deduction
+        RETURN expected_itemized - standard_deduction
+      ELSE
+        RETURN null
+        
+    requires_input:
+      - field: will_itemize
+        question: "Do you expect to itemize deductions instead of taking the standard deduction?"
+        type: boolean
+        
+      - field: expected_itemized_deductions
+        question: "What are your expected itemized deductions?"
+        type: currency
+        condition: "will_itemize == true"
+        help: "Include mortgage interest, state/local taxes, charitable contributions, etc."
+
+  # Step 4(c) - Extra Withholding
+  - field: step4c_extra_withholding
+    type: currency
+    optional: true
+    logic: |
+      RETURN employee_input.extra_withholding OR null
+      
+    requires_input:
+      - field: extra_withholding
+        question: "Do you want any additional amount withheld from each paycheck?"
+        type: currency
+        optional: true
+
+# ==============================================
+# VALIDATION RULES
+# ==============================================
+validations:
+  - field: step1b_ssn
+    rules:
+      - type: format
+        pattern: "^\\d{3}-\\d{2}-\\d{4}$"
+        error: "SSN must be in format XXX-XX-XXXX"
+        
+      - type: custom
+        function: validate_ssn_area_number
+        error: "Invalid SSN - area number not valid"
+        
+  - field: step3_dependents
+    rules:
+      - type: range
+        min: 0
+        max: 50000
+        error: "Dependent credit amount seems incorrect"
+        
+  - field: step4c_extra_withholding
+    rules:
+      - type: range
+        min: 0
+        error: "Extra withholding cannot be negative"
+
+# ==============================================
+# POST-FILL CHECKS
+# ==============================================
+post_fill_checks:
+  - check: |
+      IF step2_multiple_jobs == checked AND step3_dependents > 0
+      THEN warn "Employee selected multiple jobs and claimed dependents - verify worksheet completed"
+      
+  - check: |
+      IF step4a_other_income > 50000
+      THEN flag "High other income reported - recommend reviewing with employee"
+      
+  - check: |
+      IF filing_status == "head_of_household" AND dependents_under_17 == 0 AND other_dependents == 0
+      THEN warn "Head of household status usually requires at least one dependent"
+
+# ==============================================
+# CONFIDENCE SCORING
+# ==============================================
+confidence:
+  high_confidence_fields:
+    - step1a_first_name   # Direct from HRIS
+    - step1a_last_name    # Direct from HRIS
+    - step1b_ssn          # Direct from HRIS
+    - step1c_address      # Direct from HRIS
+    
+  requires_input_fields:
+    - step1c_filing_status
+    - step2_multiple_jobs
+    - step3_dependents
+    
+  always_review:
+    - step1b_ssn  # Sensitive data

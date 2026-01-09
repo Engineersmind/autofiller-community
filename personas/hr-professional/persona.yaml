@@ -1,0 +1,111 @@
+# HR Professional Persona
+# =======================
+# This persona represents HR staff who process employee paperwork
+
+id: hr-professional
+name: HR Professional
+description: |
+  Human Resources professionals who handle employee onboarding,
+  benefits enrollment, and employment documentation.
+
+role:
+  title: HR Specialist / HR Generalist
+  department: Human Resources
+  responsibilities:
+    - Process new hire paperwork (W-4, I-9, direct deposit)
+    - Manage benefits enrollment forms
+    - Handle employment verification requests
+    - Maintain employee records and documentation
+    - Ensure compliance with federal and state requirements
+
+document_expertise:
+  primary:
+    - IRS Form W-4 (Employee's Withholding Certificate)
+    - USCIS Form I-9 (Employment Eligibility Verification)
+    - State W-4 variants (CA DE-4, NY IT-2104, etc.)
+    - Direct Deposit Authorization
+    - Benefits Enrollment Forms
+  secondary:
+    - Employment Contracts
+    - Offer Letters
+    - NDA / Confidentiality Agreements
+    - Emergency Contact Forms
+    - Employee Handbook Acknowledgment
+
+data_sources:
+  - type: system
+    name: HRIS / HCM System
+    description: Human Resource Information System
+    fields:
+      - employee_id
+      - legal_name
+      - preferred_name
+      - ssn
+      - date_of_birth
+      - address
+      - phone
+      - email
+      - hire_date
+      - department
+      - job_title
+      - manager
+      
+  - type: system
+    name: Payroll System
+    fields:
+      - pay_rate
+      - pay_frequency
+      - exempt_status
+      - work_location
+      
+  - type: document
+    name: Employee-Provided Documents
+    fields:
+      - government_id
+      - work_authorization
+      - prior_w2
+      - voided_check
+      
+  - type: user_input
+    name: Employee Interview/Questionnaire
+    fields:
+      - filing_status
+      - multiple_jobs
+      - spouse_works
+      - dependents
+      - additional_withholding
+
+knowledge:
+  regulations:
+    - IRS Publication 15-T (Federal Income Tax Withholding)
+    - I-9 completion requirements (3 business day rule)
+    - List A, B, C acceptable documents for I-9
+    - State-specific withholding requirements
+    - HIPAA (for benefits forms)
+    
+  calculations:
+    - Federal withholding estimation
+    - State withholding estimation
+    - Dependent tax credit calculation ($2000 per child, $500 per other)
+    - Prorated benefits calculations
+    
+  validations:
+    - SSN format (XXX-XX-XXXX) and basic validity check
+    - I-9 document acceptability
+    - Address standardization (USPS format)
+    - Date validations (hire date, DOB, document expiry)
+    - Citizenship/work authorization status
+
+training_config:
+  min_examples: 500
+  accuracy_target: 0.98
+  
+  # These fields always need human review
+  requires_human_review:
+    - ssn
+    - bank_account_number
+    - bank_routing_number
+    
+  # Confidence thresholds
+  auto_fill_threshold: 0.95
+  suggest_threshold: 0.75

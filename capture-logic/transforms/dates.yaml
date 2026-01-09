@@ -1,0 +1,65 @@
+# Date Transformation Rules
+# =========================
+# Common date format transformations for form filling
+
+transforms:
+  # ISO 8601 format
+  - name: format_date_iso
+    type: date
+    input_formats:
+      - "MM/DD/YYYY"
+      - "M/D/YYYY"
+      - "MM-DD-YYYY"
+      - "DD/MM/YYYY"
+      - "YYYY/MM/DD"
+      - "DD-MMM-YYYY"
+      - "MMM DD, YYYY"
+      - "MMMM DD, YYYY"
+    output_format: "YYYY-MM-DD"
+    
+  # US format
+  - name: format_date_us
+    type: date
+    input_formats:
+      - "YYYY-MM-DD"
+      - "DD/MM/YYYY"
+      - "DD-MMM-YYYY"
+    output_format: "MM/DD/YYYY"
+    
+  # Long format
+  - name: format_date_long
+    type: date
+    input_formats:
+      - "YYYY-MM-DD"
+      - "MM/DD/YYYY"
+    output_format: "MMMM DD, YYYY"
+    
+  # Month and year only
+  - name: format_month_year
+    type: date
+    input_formats:
+      - "YYYY-MM-DD"
+      - "MM/DD/YYYY"
+      - "MM/YYYY"
+      - "MMM YYYY"
+    output_format: "MM/YYYY"
+    
+  # Year only
+  - name: format_year
+    type: date
+    input_formats:
+      - "YYYY-MM-DD"
+      - "MM/DD/YYYY"
+    output_format: "YYYY"
+    
+  # Tax year format (year for tax filing)
+  - name: format_tax_year
+    type: date
+    input_formats:
+      - "YYYY-MM-DD"
+      - "YYYY"
+    output_format: "YYYY"
+    # If date is in January-April, use previous year
+    rules:
+      - condition: "month <= 4"
+        output: "year - 1"

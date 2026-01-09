@@ -1,0 +1,168 @@
+# Documents filled by HR Professional persona
+# ============================================
+
+documents:
+  # ============================================
+  # FEDERAL TAX FORMS
+  # ============================================
+  - id: irs-w4
+    name: IRS Form W-4
+    full_name: Employee's Withholding Certificate
+    version: "2024"
+    issuer: IRS
+    purpose: Determine federal income tax withholding from employee's paycheck
+    frequency: high  # Filled for every new hire
+    complexity: medium
+    
+    when_used:
+      - New employee onboarding
+      - Employee requests withholding change
+      - Life event (marriage, divorce, new child)
+      - Annual review (optional)
+      
+    sections:
+      - name: Step 1 - Personal Information
+        fields: [name, ssn, address, filing_status]
+        source: hris
+        
+      - name: Step 2 - Multiple Jobs
+        fields: [multiple_jobs_checkbox, worksheet]
+        source: employee_input
+        
+      - name: Step 3 - Dependents
+        fields: [qualifying_children, other_dependents, total]
+        source: employee_input
+        calculation: true
+        
+      - name: Step 4 - Other Adjustments
+        fields: [other_income, deductions, extra_withholding]
+        source: employee_input
+        optional: true
+        
+      - name: Step 5 - Signature
+        fields: [signature, date]
+        source: employee
+        
+    dependencies:
+      - Prior year W-2 (optional, for estimation)
+      - Spouse's income info (if multiple jobs)
+
+  # ============================================
+  # EMPLOYMENT ELIGIBILITY
+  # ============================================
+  - id: uscis-i9
+    name: USCIS Form I-9
+    full_name: Employment Eligibility Verification
+    version: "08/01/2023"
+    issuer: USCIS
+    purpose: Verify identity and employment authorization
+    frequency: high
+    complexity: high
+    
+    when_used:
+      - New employee onboarding (required)
+      - Reverification (for expiring work authorization)
+      
+    timing_requirements:
+      section_1: "Complete by end of first day of employment"
+      section_2: "Complete within 3 business days of start date"
+      
+    sections:
+      - name: Section 1 - Employee Information
+        completed_by: employee
+        fields: [name, address, dob, ssn, email, phone, citizenship_status]
+        
+      - name: Section 2 - Employer Review
+        completed_by: hr_professional
+        fields: [document_title, issuing_authority, document_number, expiration]
+        requires: physical_document_inspection
+        
+      - name: Section 3 - Reverification
+        completed_by: hr_professional
+        optional: true
+        when: work_authorization_expires
+        
+    acceptable_documents:
+      list_a:  # Establishes both identity and work authorization
+        - US Passport
+        - Permanent Resident Card
+        - Employment Authorization Document
+        # ... see I-9 instructions
+      list_b:  # Establishes identity
+        - Driver's License
+        - State ID Card
+        - School ID with photo
+      list_c:  # Establishes work authorization
+        - Social Security Card (unrestricted)
+        - Birth Certificate
+        - Employment authorization from DHS
+
+  # ============================================
+  # PAYROLL SETUP
+  # ============================================
+  - id: direct-deposit
+    name: Direct Deposit Authorization
+    purpose: Set up electronic payroll deposit
+    frequency: high
+    complexity: low
+    
+    fields:
+      - name: employee_name
+        source: hris
+        
+      - name: bank_name
+        source: employee_input
+        
+      - name: routing_number
+        source: employee_input
+        validation: aba_routing
+        sensitive: true
+        
+      - name: account_number
+        source: employee_input
+        sensitive: true
+        
+      - name: account_type
+        source: employee_input
+        options: [checking, savings]
+        
+      - name: deposit_amount
+        source: employee_input
+        options: [full_amount, percentage, fixed_amount]
+
+  # ============================================
+  # BENEFITS
+  # ============================================
+  - id: benefits-enrollment
+    name: Benefits Enrollment Form
+    purpose: Enroll employee and dependents in company benefits
+    frequency: medium
+    complexity: high
+    
+    when_used:
+      - New hire enrollment period
+      - Annual open enrollment
+      - Qualifying life event
+      
+    sections:
+      - name: Employee Information
+        source: hris
+        
+      - name: Medical Plan Selection
+        source: employee_input
+        requires: plan_comparison
+        
+      - name: Dental Plan Selection
+        source: employee_input
+        
+      - name: Vision Plan Selection
+        source: employee_input
+        
+      - name: Dependent Information
+        source: employee_input
+        fields: [name, relationship, dob, ssn]
+        repeating: true
+        
+      - name: Beneficiary Designation
+        source: employee_input
+        for: [life_insurance, 401k]

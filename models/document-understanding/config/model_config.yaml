@@ -1,0 +1,89 @@
+# Document Understanding Model Configuration
+# ==========================================
+#
+# This config defines the model architecture for understanding
+# PDF structure, layout, and content organization.
+
+model:
+  name: autofiller-doc-understanding
+  version: 1.0.0
+  
+  # Base architecture
+  backbone:
+    type: layoutlmv3  # Options: layoutlmv3, donut, pix2struct
+    pretrained: microsoft/layoutlmv3-base
+    freeze_backbone: false
+    
+  # Document layout analysis head
+  layout_head:
+    type: segment_detector
+    num_classes: 12  # header, paragraph, table, form_field, etc.
+    hidden_size: 768
+    num_layers: 2
+    
+  # Text understanding head  
+  text_head:
+    type: token_classifier
+    num_labels: 32  # NER labels
+    hidden_size: 768
+    dropout: 0.1
+
+# Input processing
+input:
+  # Image settings
+  image:
+    max_size: 1024
+    normalize: true
+    channels: 3
+    
+  # Text settings
+  text:
+    max_length: 512
+    tokenizer: microsoft/layoutlmv3-base
+    
+  # Layout settings
+  layout:
+    normalize_bbox: true
+    max_boxes: 256
+
+# Output configuration
+output:
+  # Layout segmentation
+  segments:
+    - header
+    - subheader
+    - paragraph
+    - table
+    - table_row
+    - table_cell
+    - form_field
+    - form_value
+    - list_item
+    - figure
+    - footer
+    - signature
+    
+  # Entity types
+  entities:
+    - DATE
+    - AMOUNT
+    - CURRENCY
+    - PERSON
+    - ORGANIZATION
+    - ADDRESS
+    - PHONE
+    - EMAIL
+    - ID_NUMBER
+    - PERCENTAGE
+
+# Inference settings
+inference:
+  batch_size: 1
+  device: cuda  # cuda, cpu, mps
+  precision: fp16  # fp32, fp16, bf16
+  
+  # Post-processing
+  postprocess:
+    confidence_threshold: 0.5
+    nms_threshold: 0.3
+    merge_adjacent_segments: true
