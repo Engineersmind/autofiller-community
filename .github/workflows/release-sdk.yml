@@ -1,0 +1,81 @@
+name: Release SDK
+
+on:
+  push:
+    tags:
+      - 'sdk-v*'
+  workflow_dispatch:
+    inputs:
+      sdk:
+        description: 'SDK to release'
+        required: true
+        type: choice
+        options:
+          - typescript
+          - python
+          - both
+      version:
+        description: 'Version to release (e.g., 0.2.0)'
+        required: true
+        type: string
+
+jobs:
+  release-typescript:
+    name: Release TypeScript SDK
+    runs-on: ubuntu-latest
+    if: github.event.inputs.sdk == 'typescript' || github.event.inputs.sdk == 'both' || startsWith(github.ref, 'refs/tags/sdk-v')
+    defaults:
+      run:
+        working-directory: sdks/typescript
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: sdks/typescript/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  release-python:
+    name: Release Python SDK
+    runs-on: ubuntu-latest
+    if: github.event.inputs.sdk == 'python' || github.event.inputs.sdk == 'both' || startsWith(github.ref, 'refs/tags/sdk-v')
+    defaults:
+      run:
+        working-directory: sdks/python
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build tools
+        run: |
+          pip install build twine
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to PyPI
+        run: |
+          twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}

@@ -1,0 +1,54 @@
+name: Eval Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'domain-packs/**'
+      - 'evals/**'
+  workflow_dispatch:
+    inputs:
+      pack:
+        description: 'Specific pack to evaluate (leave empty for all changed)'
+        required: false
+        type: string
+
+jobs:
+  smoke-eval:
+    name: Smoke Evaluation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r evals/runner/requirements.txt
+
+      - name: Validate changed packs
+        run: |
+          python -m evals.runner.validate_packs
+
+      - name: Run smoke eval
+        run: |
+          if [ -n "${{ github.event.inputs.pack }}" ]; then
+            python -m evals.runner.smoke_eval --pack "${{ github.event.inputs.pack }}"
+          else
+            python -m evals.runner.smoke_eval --changed-only
+          fi
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-eval-results
+          path: |
+            eval-results.json
+          retention-days: 7

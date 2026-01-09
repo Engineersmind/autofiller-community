@@ -1,0 +1,19 @@
+{
+  "document_id": "DOC-2024-001",
+  "document_date": "2024-01-15",
+  "title": "Sample Document",
+  "description": "This is an example document for the starter pack",
+  "amount": 1234.56,
+  "currency": "USD",
+  "sender": {
+    "name": "Acme Corporation",
+    "address": "123 Business Ave, New York, NY 10001",
+    "email": "billing@acme.example.com"
+  },
+  "recipient": {
+    "name": "John Smith",
+    "address": "456 Customer St, Los Angeles, CA 90001",
+    "email": "john.smith@example.com"
+  },
+  "notes": "Thank you for your business!"
+}

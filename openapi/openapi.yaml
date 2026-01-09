@@ -1,0 +1,624 @@
+openapi: 3.1.0
+info:
+  title: Autofiller Community Edition API
+  description: |
+    Document extraction API for converting unstructured documents into structured JSON.
+    
+    ## Overview
+    Autofiller provides intelligent document processing that:
+    - Accepts PDFs, images, and scanned documents
+    - Routes documents to appropriate domain packs
+    - Extracts structured data based on pack schemas
+    - Returns validated JSON with confidence scores
+    
+    ## Authentication
+    All API requests require a Bearer token in the Authorization header:
+    ```
+    Authorization: Bearer YOUR_API_KEY
+    ```
+    
+    ## Rate Limits
+    - Free tier: 100 requests/day
+    - Pro tier: 10,000 requests/day
+    - Enterprise: Custom limits
+  version: 1.0.0
+  contact:
+    name: Autofiller Community
+    url: https://github.com/your-org/autofiller-community
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.autofiller.dev/v1
+    description: Production API
+  - url: https://sandbox.autofiller.dev/v1
+    description: Sandbox (for testing)
+  - url: http://localhost:8080/v1
+    description: Local development
+
+tags:
+  - name: extraction
+    description: Document extraction operations
+  - name: documents
+    description: Document management
+  - name: domain-packs
+    description: Domain pack information
+  - name: health
+    description: API health and status
+
+paths:
+  /health:
+    get:
+      tags:
+        - health
+      summary: Health check
+      description: Returns API health status
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /extract:
+    post:
+      tags:
+        - extraction
+      summary: Extract data from document
+      description: |
+        Upload a document and extract structured data using a domain pack.
+        
+        This is a synchronous endpoint for small documents (<10 pages).
+        For larger documents, use the async extraction endpoint.
+      operationId: extractSync
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Document file (PDF, PNG, JPG, TIFF)
+                domain_pack:
+                  type: string
+                  description: |
+                    Domain pack to use for extraction. 
+                    If omitted, auto-routing will select the best pack.
+                  example: invoice-standard
+                options:
+                  type: object
+                  description: Extraction options
+                  properties:
+                    include_confidence:
+                      type: boolean
+                      default: true
+                      description: Include confidence scores per field
+                    include_bounding_boxes:
+                      type: boolean
+                      default: false
+                      description: Include bounding box coordinates
+                    language:
+                      type: string
+                      default: en
+                      description: Document language hint (ISO 639-1)
+      responses:
+        '200':
+          description: Extraction successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Document too large (use async endpoint)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Unprocessable document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /extract/async:
+    post:
+      tags:
+        - extraction
+      summary: Start async extraction
+      description: |
+        Start an asynchronous extraction job for large documents.
+        Returns a job ID that can be polled for status.
+      operationId: extractAsync
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Document file (PDF, PNG, JPG, TIFF)
+                domain_pack:
+                  type: string
+                  description: Domain pack to use
+                webhook_url:
+                  type: string
+                  format: uri
+                  description: URL to POST results when complete
+                options:
+                  type: object
+                  properties:
+                    include_confidence:
+                      type: boolean
+                      default: true
+                    include_bounding_boxes:
+                      type: boolean
+                      default: false
+      responses:
+        '202':
+          description: Job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobCreated'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /jobs/{job_id}:
+    get:
+      tags:
+        - extraction
+      summary: Get job status
+      description: Poll for async extraction job status and results
+      operationId: getJob
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Job ID returned from async extraction
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /documents:
+    get:
+      tags:
+        - documents
+      summary: List processed documents
+      description: Retrieve a paginated list of previously processed documents
+      operationId: listDocuments
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: domain_pack
+          in: query
+          schema:
+            type: string
+          description: Filter by domain pack
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed]
+      responses:
+        '200':
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /documents/{document_id}:
+    get:
+      tags:
+        - documents
+      summary: Get document details
+      description: Retrieve extraction results for a specific document
+      operationId: getDocument
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /domain-packs:
+    get:
+      tags:
+        - domain-packs
+      summary: List available domain packs
+      description: Get all domain packs available for extraction
+      operationId: listDomainPacks
+      responses:
+        '200':
+          description: List of domain packs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DomainPackList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /domain-packs/{pack_name}:
+    get:
+      tags:
+        - domain-packs
+      summary: Get domain pack details
+      description: Get schema and metadata for a specific domain pack
+      operationId: getDomainPack
+      parameters:
+        - name: pack_name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: invoice-standard
+      responses:
+        '200':
+          description: Domain pack details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DomainPack'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Domain pack not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API Key
+
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - version
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        version:
+          type: string
+          example: "1.0.0"
+        timestamp:
+          type: string
+          format: date-time
+
+    ExtractionResult:
+      type: object
+      required:
+        - id
+        - status
+        - domain_pack
+        - data
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique extraction ID
+        status:
+          type: string
+          enum: [completed, partial]
+        domain_pack:
+          type: string
+          description: Domain pack used for extraction
+        data:
+          type: object
+          description: Extracted structured data (schema varies by pack)
+          additionalProperties: true
+        confidence:
+          type: object
+          description: Per-field confidence scores (0-1)
+          additionalProperties:
+            type: number
+            minimum: 0
+            maximum: 1
+        bounding_boxes:
+          type: object
+          description: Per-field bounding box coordinates
+          additionalProperties:
+            $ref: '#/components/schemas/BoundingBox'
+        metadata:
+          $ref: '#/components/schemas/ExtractionMetadata'
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Non-fatal issues encountered during extraction
+
+    BoundingBox:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        x:
+          type: number
+        y:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+
+    ExtractionMetadata:
+      type: object
+      properties:
+        pages:
+          type: integer
+          description: Total pages in document
+        processing_time_ms:
+          type: integer
+          description: Processing time in milliseconds
+        model_version:
+          type: string
+          description: Model version used
+        created_at:
+          type: string
+          format: date-time
+
+    JobCreated:
+      type: object
+      required:
+        - job_id
+        - status
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending]
+        estimated_time_seconds:
+          type: integer
+          description: Estimated processing time
+
+    JobStatus:
+      type: object
+      required:
+        - job_id
+        - status
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Processing progress percentage
+        result:
+          $ref: '#/components/schemas/ExtractionResult'
+        error:
+          $ref: '#/components/schemas/Error'
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    Document:
+      type: object
+      required:
+        - id
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        domain_pack:
+          type: string
+        result:
+          $ref: '#/components/schemas/ExtractionResult'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    DocumentList:
+      type: object
+      required:
+        - items
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    DomainPack:
+      type: object
+      required:
+        - name
+        - version
+        - description
+        - schema
+      properties:
+        name:
+          type: string
+          example: invoice-standard
+        version:
+          type: string
+          example: "1.0.0"
+        description:
+          type: string
+        schema:
+          type: object
+          description: JSON Schema for extracted data
+        routing:
+          type: object
+          properties:
+            keywords:
+              type: array
+              items:
+                type: string
+            anchors:
+              type: array
+              items:
+                type: string
+        supported_formats:
+          type: array
+          items:
+            type: string
+          example: [pdf, png, jpg]
+
+    DomainPackList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainPack'
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error context
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: bad_request
+            message: Invalid file format. Supported formats are PDF, PNG, JPG, TIFF.
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: unauthorized
+            message: Invalid or missing API key
+
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: rate_limited
+            message: Rate limit exceeded. Please retry after 60 seconds.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until rate limit resets
+
+security:
+  - bearerAuth: []

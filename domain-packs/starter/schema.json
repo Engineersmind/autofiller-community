@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://autofiller.dev/schemas/starter.schema.json",
+  "title": "Starter Pack Schema",
+  "description": "Example schema for the starter domain pack. Demonstrates common field types and patterns.",
+  "type": "object",
+  "properties": {
+    "document_id": {
+      "type": "string",
+      "description": "Unique document identifier or reference number"
+    },
+    "document_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Document date in ISO 8601 format (YYYY-MM-DD)"
+    },
+    "title": {
+      "type": "string",
+      "description": "Document title or heading"
+    },
+    "description": {
+      "type": "string",
+      "description": "Document description or summary"
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Monetary amount (if applicable)"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "ISO 4217 currency code (e.g., USD, EUR)"
+    },
+    "sender": {
+      "type": "object",
+      "description": "Sender/source information",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Sender name"
+        },
+        "address": {
+          "type": "string",
+          "description": "Sender address"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Sender email address"
+        }
+      }
+    },
+    "recipient": {
+      "type": "object",
+      "description": "Recipient/destination information",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Recipient name"
+        },
+        "address": {
+          "type": "string",
+          "description": "Recipient address"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Recipient email address"
+        }
+      }
+    },
+    "line_items": {
+      "type": "array",
+      "description": "List of line items (if applicable)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unit_price": {
+            "type": "number",
+            "minimum": 0
+          },
+          "amount": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or comments"
+    }
+  },
+  "required": [
+    "document_id",
+    "document_date",
+    "title"
+  ]
+}

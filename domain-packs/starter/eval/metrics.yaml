@@ -1,0 +1,66 @@
+# Evaluation Metrics Configuration
+#
+# Defines the quality thresholds that must be met for this pack
+# to pass CI validation.
+
+# Required fields that MUST be extracted for a case to pass
+required_fields:
+  - document_id
+  - document_date
+  - title
+
+# Quality thresholds (0.0 to 1.0)
+thresholds:
+  # Percentage of required fields that must be present
+  # E.g., 0.95 means 95% of required fields must be extracted
+  required_present_rate: 0.95
+  
+  # Percentage of fields that must match expected value exactly
+  # For strings, this is case-insensitive comparison after normalization
+  exact_match_rate: 0.80
+  
+  # Percentage of fields that must be "close enough"
+  # Uses fuzzy matching for strings, tolerance for numbers
+  fuzzy_match_rate: 0.90
+
+# Numeric field tolerances
+# Allows small differences in extracted numbers
+numeric_tolerance:
+  # Absolute tolerance for monetary amounts
+  amount: 0.01
+  
+  # Relative tolerance (percentage) for other numbers
+  # E.g., 0.01 = 1% difference allowed
+  default: 0.01
+
+# String comparison settings
+string_comparison:
+  # Normalize whitespace before comparison
+  normalize_whitespace: true
+  
+  # Convert to lowercase before comparison
+  case_insensitive: true
+  
+  # Remove common punctuation differences
+  normalize_punctuation: true
+  
+  # Levenshtein distance threshold for fuzzy match (0-1)
+  fuzzy_threshold: 0.85
+
+# Date comparison settings
+date_comparison:
+  # Allowed date formats for parsing
+  formats:
+    - "%Y-%m-%d"
+    - "%m/%d/%Y"
+    - "%d/%m/%Y"
+    - "%B %d, %Y"
+
+# Scoring weights (for composite score calculation)
+weights:
+  required_present: 0.4
+  exact_match: 0.4
+  fuzzy_match: 0.2
+
+# Minimum composite score to pass
+minimum_score: 0.80

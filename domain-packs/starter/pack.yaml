@@ -1,0 +1,67 @@
+# Starter Domain Pack
+#
+# This is a template pack demonstrating the domain pack structure.
+# Copy this directory to create your own pack.
+
+name: starter
+version: 0.1.0
+description: Example starter pack demonstrating domain pack structure and conventions
+
+owners:
+  - github: your-org
+
+# Path to JSON Schema defining extracted fields
+schema: schema.json
+
+# Document routing configuration
+routing:
+  # Keywords that indicate this document type
+  keywords:
+    - "SAMPLE DOCUMENT"
+    - "STARTER PACK"
+  
+  # Text anchors that increase routing confidence
+  anchors:
+    - "Example Field"
+    - "Demo Value"
+
+# Evaluation configuration
+eval:
+  # Path to eval cases (JSONL format)
+  cases: eval/cases.jsonl
+  
+  # Directory containing expected output JSON files
+  expected_dir: eval/expected
+  
+  # Path to metrics configuration
+  metrics: eval/metrics.yaml
+  
+  # Directory containing test fixture documents
+  fixtures_dir: fixtures
+
+# Pack constraints
+constraints:
+  # PII policy for test fixtures
+  # Options: synthetic-or-redacted-only, synthetic-only, no-pii
+  pii_policy: synthetic-or-redacted-only
+  
+  # Maximum pages this pack supports
+  max_pages: 10
+  
+  # Supported file formats
+  supported_formats:
+    - pdf
+    - png
+    - jpg
+  
+  # Supported languages (ISO 639-1)
+  languages:
+    - en
+
+# Optional metadata
+metadata:
+  tags:
+    - example
+    - template
+  industry: general
+  region: global

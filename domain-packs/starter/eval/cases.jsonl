@@ -1,0 +1,3 @@
+{"id": "starter_001", "fixture": "fixtures/sample_001.pdf", "expected": "eval/expected/starter_001.json", "description": "Basic single-page document"}
+{"id": "starter_002", "fixture": "fixtures/sample_002.pdf", "expected": "eval/expected/starter_002.json", "description": "Document with line items"}
+{"id": "starter_003", "fixture": "fixtures/sample_003.png", "expected": "eval/expected/starter_003.json", "description": "Image format document"}
