@@ -129,9 +129,9 @@ print(result.data)
 **cURL:**
 ```bash
 # Upload document
-curl -X POST https://api.pdffillr.ai/v1/extract \\
-  -H "Authorization: Bearer $AUTOFILLER_API_KEY" \\
-  -F "file=@invoice.pdf" \\
+curl -X POST https://api.autofiller.dev/v1/extract \
+  -H "Authorization: Bearer $AUTOFILLER_API_KEY" \
+  -F "file=@invoice.pdf" \
   -F "domain_pack=invoice-standard"
 ```
 
