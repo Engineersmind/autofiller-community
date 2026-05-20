@@ -129,7 +129,7 @@ print(result.data)
 **cURL:**
 ```bash
 # Upload document
-curl -X POST https://api.autofiller.dev/v1/extract \\
+curl -X POST https://api.pdffillr.ai/v1/extract \\
   -H "Authorization: Bearer $AUTOFILLER_API_KEY" \\
   -F "file=@invoice.pdf" \\
   -F "domain_pack=invoice-standard"
@@ -225,7 +225,7 @@ autofiller-community/
 
 We welcome contributions! Here's how to get started:
 
-1. **Good First Issues** – Check issues labeled [`good first issue`](https://github.com/your-org/autofiller-community/labels/good%20first%20issue)
+1. **Good First Issues** – Check issues labeled [`good first issue`](https://github.com/EngineersMind/autofiller-community/labels/good%20first%20issue)
 2. **Domain Packs** – Most valuable contribution! See [domain-packs/README.md](domain-packs/README.md)
 3. **SDK Improvements** – Enhancements to TypeScript/Python clients
 4. **Docs & Examples** – Tutorials, guides, sample code
@@ -259,4 +259,4 @@ Inspired by the community-first approach of:
 
 ---
 
-**Ready to extract better data?** Star this repo, contribute a domain pack, or [get your API key](https://autofiller.dev) to start building.
+**Ready to extract better data?** Star this repo, contribute a domain pack, or [get your API key](https://pdffillr.ai) to start building.
